@@ -1,0 +1,15 @@
+case "$reason" in
+    BOUND|RENEW|REBIND|REBOOT|TIMEOUT)
+        # Add static routes on em1
+	if [ "$interface" = "edge0" ]; then
+		#gateway=`echo "${new_routers%% *}" | sed 's/\./ /g'`
+		#new_classless_routes="16 10 247 10 247 0 1"
+		# route 192.2.0.128/25 and 10.0.0.0/8 to the gateway IP.
+		gateway=`echo "${new_routers%% *}" | sed 's/\./ /g'`
+		echo $gateway >> /tmp/a.output
+		new_classless_routes="16 10 247 $gateway"
+		echo $new_classless_routes >> /tmp/a.output
+		unset new_routers
+	fi
+    ;;
+esac
