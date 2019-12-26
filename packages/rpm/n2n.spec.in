@@ -20,6 +20,7 @@ n2n peer-to-peer VPN
 
 mkdir -p $RPM_BUILD_ROOT/usr/sbin $RPM_BUILD_ROOT/usr/share/man/man1 $RPM_BUILD_ROOT/usr/share/man/man7 $RPM_BUILD_ROOT/usr/share/man/man8
 mkdir -p $RPM_BUILD_ROOT/etc/n2n
+mkdir -p $RPM_BUILD_ROOT/etc/dhcp/dhclient-enter-hooks.d
 mkdir -p $RPM_BUILD_ROOT/usr/lib/systemd/system/
 cp $HOME/n2n/edge $RPM_BUILD_ROOT/usr/sbin
 cp $HOME/n2n/supernode $RPM_BUILD_ROOT/usr/sbin
@@ -28,6 +29,9 @@ cp $HOME/n2n/supernode.1.gz $RPM_BUILD_ROOT/usr/share/man/man1
 cp $HOME/n2n/edge.8.gz $RPM_BUILD_ROOT/usr/share/man/man8
 cp $HOME/n2n/packages/etc/systemd/system/*.service $RPM_BUILD_ROOT/usr/lib/systemd/system/
 cp $HOME/n2n/packages/etc/n2n/*.conf.sample $RPM_BUILD_ROOT/etc/n2n
+cp $HOME/n2n/packages/etc/n2n/*.conf $RPM_BUILD_ROOT/etc/n2n
+cp $HOME/n2n/packages/etc/dhcp/dhclient-enter-hooks $RPM_BUILD_ROOT/etc/n2n
+cp $HOME/n2n/packages/etc/dhcp/dhclient-enter-hooks.d/edge_route $RPM_BUILD_ROOT/etc/dhcp/dhclient-enter-hooks.d
 
 find $RPM_BUILD_ROOT -name ".git" | xargs /bin/rm -rf
 find $RPM_BUILD_ROOT -name ".svn" | xargs /bin/rm -rf
@@ -50,6 +54,9 @@ rm -fr $RPM_BUILD_ROOT
 /usr/lib/systemd/system/edge@.service
 /usr/lib/systemd/system/edge-ntopng@.service
 /usr/lib/systemd/system/supernode.service
+/etc/dhcp/dhclient-enter-hooks.d/edge_route
+/etc/n2n/edge.conf
+/etc/n2n/dhclient-enter-hooks
 %config(noreplace) /etc/n2n/supernode.conf.sample
 %config(noreplace) /etc/n2n/edge.conf.sample
 
@@ -84,6 +91,18 @@ if [ ! -f /.dockerenv ]; then
     /bin/systemctl daemon-reload
     # NOTE: do not enable any services during first installation
 fi
+
+if [ -f /etc/dhcp/dhclient-enter-hooks ]; then
+    grep run_hookdir /etc/dhcp/dhclient-enter-hooks
+    if [ $? -ne 0 ]; then
+        mv /etc/dhcp/dhclient-enter-hooks /etc/dhcp/dhclient-enter-hooks.d/
+        cp /etc/n2n/dhclient-enter-hooks /etc/dhcp/
+    fi
+else
+    cp /etc/n2n/dhclient-enter-hooks /etc/dhcp/
+fi
+chmod +x /etc/dhcp/dhclient-enter-hooks
+chmod +x /etc/dhcp/dhclient-enter-hooks.d/edge_route
 
 %preun
 if [ ! -f /.dockerenv ]; then
